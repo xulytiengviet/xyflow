@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Power of AI Agents — mô phỏng 58 tác tử phối hợp xây dựng WebGIS ứng phó ngập lụt. Dữ liệu minh họa, không phải dự báo thực tế.">
+  <title>Power of AI Agents — WebGIS AI Orchestrator</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">◇</div><div><div class="brand-name">WebGIS AI Orchestrator</div><div class="brand-sub">OPEN SOURCE · SPATIAL AI · DEMO</div></div></div>
+    <div class="headline"><h1>Power of AI Agents</h1><p>Sức mạnh của các AI Agent — trực quan hóa 58 tác tử làm việc song song</p></div>
+    <nav class="top-actions" aria-label="Điều khiển mô phỏng">
+      <span class="tag dark"><span class="live-dot"></span> SIMULATION</span>
+      <span class="tag">WEBGIS</span><span class="tag">MULTI-AGENT</span>
+      <button id="playBtn" class="ctrl dark" type="button" aria-label="Tạm dừng hoặc tiếp tục">❚❚ Tạm dừng</button>
+      <button id="replayBtn" class="ctrl" type="button">↺ Chạy lại</button>
+      <button id="speedBtn" class="ctrl" type="button" aria-label="Đổi tốc độ">1×</button>
+      <button id="exportBtn" class="ctrl" type="button">↓ Nhật ký JSON</button>
+    </nav>
+  </header>
+  <main class="shell">
+    <aside class="panel sidebar" aria-label="Thiết lập WebGIS">
+      <div class="section-h"><span>◈ KỊCH BẢN</span><span>⌄</span></div>
+      <div class="section-body">
+        <select id="scenario" aria-label="Kịch bản"><option value="flood">Ngập đô thị · Vĩnh Long (giả lập)</option></select>
+        <p class="subtle">58 Agent phân tích cảm biến, địa hình, nguy cơ, đường sơ tán và kiểm định dữ liệu.</p>
+      </div>
+      <div class="section-h"><span>▤ LỚP DỮ LIỆU GIS</span><span>6</span></div>
+      <div class="section-body">
+        <label class="layer-row"><input type="checkbox" data-layer="river" checked><span class="shape river"></span> Sông / kênh rạch</label>
+        <label class="layer-row"><input type="checkbox" data-layer="risk" checked><span class="shape risk"></span> Vùng nguy cơ ngập</label>
+        <label class="layer-row"><input type="checkbox" data-layer="sensors" checked><span class="shape sensor"></span> Trạm quan trắc</label>
+        <label class="layer-row"><input type="checkbox" data-layer="shelters" checked><span class="shape"></span> Điểm sơ tán</label>
+        <label class="layer-row"><input type="checkbox" data-layer="routes" checked><span class="shape route"></span> Tuyến sơ tán giả định</label>
+        <label class="layer-row"><input type="checkbox" data-layer="boundaries" checked><span class="shape"></span> Ranh giới minh họa</label>
+      </div>
+      <div class="section-h"><span>♙ ACTIVE AGENTS</span><span id="agentSidebarCount">0/58</span></div>
+      <div id="agentList" class="agent-list" aria-label="Danh sách tác tử"></div>
+      <div class="section-h"><span>◉ TRẠNG THÁI</span><span id="taskState">RUNNING</span></div>
+      <div class="tip" id="sideTip">Dữ liệu GIS, cảm biến, địa danh, chỉ số tác vụ và 1.847 layers đều là mô phỏng tất định. Không có AI backend hoặc cảnh báo thiên tai thực tế.</div>
+    </aside>
+    <section class="panel map-panel" aria-label="Bản đồ WebGIS minh họa">
+      <div class="panel-head">
+        <div><h2>▧ WebGIS · Urban Flood Emergency</h2><small>Khu vực Vĩnh Long — bản đồ sơ đồ giả định, không phải bản đồ địa chính</small></div>
+        <div class="head-metrics"><span class="metric-chip">06 GIS DATA TYPES</span><span id="mapStatus" class="metric-chip">AWAITING AGENTS</span></div>
+      </div>
+      <div class="map-viewport" id="mapViewport">
+        <div class="map-search">⌕&nbsp; Khám phá nguy cơ ngập · tuyến sơ tán</div>
+        <div class="zoom-control"><button id="zoomIn" type="button" aria-label="Phóng to bản đồ">+</button><button id="zoomOut" type="button" aria-label="Thu nhỏ bản đồ">−</button><button id="zoomReset" type="button" aria-label="Đặt lại bản đồ">⌂</button></div>
+        <div class="north">N</div>
+        <svg id="mapSvg" role="img" aria-label="Bản đồ sơ đồ các vùng ngập, sông, cảm biến, nơi trú ẩn và đường sơ tán được sinh giả lập"></svg>
+        <div class="geo-alert" id="geoAlert"><strong>⚠ FLOOD RISK · DEMO</strong><p>Nhóm tác tử thủy văn đang phân tích dữ liệu tổng hợp. Không dùng để quyết định sơ tán thực tế.</p></div>
+        <div class="legend"><strong>CHÚ GIẢI</strong><div class="legend-row"><span class="legend-swatch high"></span> Nguy cơ cao</div><div class="legend-row"><span class="legend-swatch mid"></span> Nguy cơ vừa</div><div class="legend-row"><span class="legend-swatch safe"></span> Nguy cơ thấp</div><div class="legend-row"><span class="legend-swatch road"></span> Tuyến đề xuất</div></div>
+        <div class="simulation-stamp">SYNTHETIC DATA • NOT FOR EMERGENCY USE</div>
+        <div class="map-coord">10.25°N · 105.97°E · illustrative</div>
+      </div>
+      <div class="map-detail" id="mapDetail" aria-live="polite">Chọn một vùng nguy cơ trên bản đồ hoặc một Agent trong đồ thị để xem công việc và kết quả minh họa.</div>
+    </section>
+    <section class="panel graph-panel" aria-label="Đồ thị phối hợp tác tử">
+      <div class="panel-head">
+        <div><h2>⌘ Multi-Agent Workflow (58 Agents)</h2><small>9 nhóm chức năng · đồ thị trực quan lấy cảm hứng từ xyflow</small></div>
+        <div class="head-metrics"><span class="metric-chip" id="graphState">PLAN</span><span class="metric-chip">PARALLEL</span></div>
+      </div>
+      <div class="graph-toolbar">
+        <input id="agentSearch" aria-label="Tìm kiếm tác tử" type="search" placeholder="Tìm A01–A58 / nhóm tác tử…">
+        <button id="clearSearch" type="button" class="ctrl" aria-label="Xóa tìm kiếm">×</button>
+      </div>
+      <div class="graph-canvas" id="graphCanvas">
+        <svg id="edgeSvg" aria-hidden="true"></svg>
+        <div id="groupGrid" class="group-grid"></div>
+        <svg id="agentCursors" aria-hidden="true"></svg>
+        <div id="wireframe" class="wireframe" aria-hidden="true">
+          <div class="wire">GRID · 3 × 3</div><div class="wire">7 NODE · PLANNING</div><div class="wire">7 NODE · ETL</div>
+          <div class="wire">5 NODE · VISION</div><div class="wire">8 NODE · HYDROLOGY</div><div class="wire">7 NODE · RISK</div>
+          <div class="wire">7 NODE · ROUTING</div><div class="wire">6 NODE · REPORTING</div><div class="wire">5 NODE · QA</div>
+        </div>
+      </div>
+      <div class="graph-bottom">
+        <div class="panel-head" style="padding:0;border:0"><h2>▶ Execution Flow</h2><span id="elapsed" class="metric-chip">T+00:00</span></div>
+        <div class="timeline" id="timeline" aria-label="Tiến trình xử lý"></div>
+        <div class="bottom-meta">
+          <div class="log-feed" id="logFeed" role="log" aria-live="off"></div>
+          <div class="agent-inspector" id="inspector"><strong>AGENT INSPECTOR</strong><div>Nhấn vào A01–A58 để xem trạng thái.</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="footer">
+    <div class="footer-primary">58 agents | <span id="layerCount">0</span> / 1847 layers</div>
+    <div class="progress-track" aria-label="Tiến độ dựng mô phỏng"><div class="progress-fill" id="progressFill"></div></div>
+    <div id="doneMetric">0 COMPLETE · 0 ACTIVE</div>
+    <div id="latencyMetric">TIME: 0.0s · SPEED 1×</div>
+    <div class="footer-note">1847 = số thao tác/lớp UI giả lập, không phải 1.847 lớp GIS</div>
+    <div class="footer-note">Prototype · Long Ngo · MIT · <a href="https://github.com/xulytiengviet/xyflow">GitHub</a></div>
+  </footer>
+</body>
+</html>
