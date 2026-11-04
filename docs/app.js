@@ -9,17 +9,29 @@
   'use strict';
   const TOTAL_AGENTS = 58;
   const TOTAL_LAYERS = 1847;
-  const DURATION = 32000;
-  const STAGES = ['Plan','Ingest','ETL','Fuse','Model','Risk','Route','Report','QA'];
+  const DURATION = 36000;
+  const STAGES = ['Blank','Wireframe','Basemap','Hydro','Buildings','Sensors','Flood','Routes','Complete'];
+  const STAGE_MS = DURATION / STAGES.length;
+  const STAGE_DETAILS = [
+    '00 — CANVAS TRẮNG: chưa có bản đồ, công trình hay dữ liệu. Đây là điểm xuất phát.',
+    '01 — WIREFRAME: các Agent dựng khung bố cục và phân công vùng làm việc.',
+    '02 — BASEMAP: hình thành lưới nền, thửa mẫu và ranh giới không gian.',
+    '03 — HYDRO: sông, kênh rạch và các tuyến giao thông được dựng dần.',
+    '04 — BUILDINGS: công trình, nơi trú ẩn và tầng 1 của trạm điều phối xuất hiện.',
+    '05 — SENSORS: trạm quan trắc xuất hiện; trạm điều phối được dựng đến tầng 2.',
+    '06 — FLOOD: phủ lớp nguy cơ ngập; trạm điều phối hoàn thành tầng 3.',
+    '07 — ROUTES: nối các tuyến sơ tán mô phỏng; trạm điều phối hoàn thành tầng 4.',
+    '08 — COMPLETE: hoàn thiện tầng 5, chú giải, nhãn và dashboard WebGIS.'
+  ];
   const GROUPS = [
-    {name:'Planning', count:7, phase:0, task:'Lập kế hoạch phân tích không gian'},
+    {name:'Planning', count:7, phase:1, task:'Lập kế hoạch phân tích không gian'},
     {name:'Spatial ETL', count:7, phase:2, task:'Kiểm tra CRS, chuẩn hóa GeoJSON và hình học'},
-    {name:'Sensor Fusion', count:6, phase:3, task:'Đối chiếu và tổng hợp dữ liệu cảm biến'},
-    {name:'Vision', count:5, phase:1, task:'Diễn giải ảnh và lớp phủ bề mặt'},
-    {name:'Hydrology', count:8, phase:4, task:'Mô hình hóa ngập theo kịch bản'},
-    {name:'Risk Scoring', count:7, phase:5, task:'Phân loại vùng có nguy cơ'},
-    {name:'Routing', count:7, phase:6, task:'Đề xuất tuyến sơ tán có ràng buộc'},
-    {name:'Reporting', count:6, phase:7, task:'Tạo bảng, biểu đồ và báo cáo'},
+    {name:'Sensor Fusion', count:6, phase:5, task:'Đối chiếu và tổng hợp dữ liệu cảm biến'},
+    {name:'Vision', count:5, phase:4, task:'Diễn giải ảnh và lớp phủ bề mặt'},
+    {name:'Hydrology', count:8, phase:3, task:'Mô hình hóa ngập theo kịch bản'},
+    {name:'Risk Scoring', count:7, phase:6, task:'Phân loại vùng có nguy cơ'},
+    {name:'Routing', count:7, phase:7, task:'Đề xuất tuyến sơ tán có ràng buộc'},
+    {name:'Reporting', count:6, phase:8, task:'Tạo bảng, biểu đồ và báo cáo'},
     {name:'QA', count:5, phase:8, task:'Đánh giá sai số, nguồn gốc và tính nhất quán'}
   ];
   const CONNECTIONS = [[0,1],[0,3],[1,2],[1,4],[2,4],[3,4],[4,5],[5,6],[5,7],[6,7],[7,8],[8,0]];
@@ -30,10 +42,9 @@
     south: {name:'Khu phía Nam (giả định)', risk:'Thấp', depth:'0,12 m', recommendation:'Kiểm tra điều kiện tuyến di chuyển.'}
   };
   const $ = id => document.getElementById(id);
-  let agents = [], agentNodes = new Map(), groupNodes = [], cursorNodes = [];
+  let agents = [], agentNodes = new Map(), groupNodes = [], cursorNodes = [], mapCursorNodes = [];
   let elapsed = 0, lastFrame = 0, paused = false, speed = 1;
-  let lastRender = -1, selectedId = null, mapZoom = 1;
-  const startDelays = [1300,1700,2100,2500,2900,3300,3700];
+  let lastRender = -1, lastStage = -1, selectedId = null, mapZoom = 1;
   const fmt = n => String(n).padStart(2,'0');
   const escapeHTML = v => String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   function makeAgents() {
@@ -42,8 +53,8 @@
       for (let k=0;k<g.count;k++) {
         n++;
         agents.push({id:'A'+fmt(n), group:gi, groupName:g.name, task:g.task,
-          start:startDelays[k%startDelays.length] + gi*25,
-          end:26000 + ((n*3)%7)*900,
+          start: STAGE_MS + ((n*61)%950),
+          end: Math.min(DURATION, (g.phase + 1)*STAGE_MS + ((n*23)%450)),
           effort:Math.max(10,Math.round(27 + ((n*37)%85)))});
       }
     });
@@ -88,48 +99,132 @@
     if (grid.children.length !== GROUPS.length) throw new Error('Invalid group count');
   }
   function svgMap() {
-    const roads=[];
-    for(let x=20;x<790;x+=54){
-      roads.push('<path d="M'+x+' 0 Q'+(x+28)+' 260 '+(x-8)+' 600" stroke="#d5d5d5" stroke-width="'+(x%3===0?4:2)+'" fill="none"/>');
+    const roads = [];
+    for (let x=18; x<820; x+=54) {
+      roads.push('<path d="M'+x+' 0 Q'+(x+27)+' 270 '+(x-8)+' 600" stroke="#d7d7d7" stroke-width="3" fill="none"/>');
     }
-    for(let y=32;y<605;y+=49){
-      roads.push('<path d="M0 '+y+' Q400 '+(y+15)+' 820 '+(y-24)+'" stroke="#dbdbdb" stroke-width="'+(y%2?2:3)+'" fill="none"/>');
+    for (let y=28; y<600; y+=49) {
+      roads.push('<path d="M0 '+y+' Q400 '+(y+14)+' 820 '+(y-20)+'" stroke="#dedede" stroke-width="2.5" fill="none"/>');
     }
     const sensors=[[86,125],[173,210],[240,102],[312,282],[406,152],[500,325],[598,219],[686,401],[154,455],[340,498],[563,514],[721,96]];
     const shelters=[[170,143],[319,136],[606,110],[715,290],[515,476],[243,506],[745,516]];
-    let sensorSvg='',shelterSvg='';
-    sensors.forEach((p,i)=>{
-      sensorSvg += '<g transform="translate('+p[0]+' '+p[1]+')" class="sensor-marker"><circle r="14" fill="#fff" stroke="#222" stroke-width="2"/><circle r="5" fill="#111"/><circle r="20" fill="none" stroke="#777" opacity=".3" stroke-dasharray="3 4"/><title>Trạm SYN-'+fmt(i+1)+' (dữ liệu giả lập)</title></g>';
-    });
-    shelters.forEach((p,i)=>{
-      shelterSvg += '<g transform="translate('+p[0]+' '+p[1]+')"><circle r="18" fill="#111" stroke="#fff" stroke-width="3"/><path d="M-9 0 L0 -8 9 0 V9 H-9 Z M-2 9 V2 H3 V9" fill="none" stroke="#fff" stroke-width="2"/><title>Điểm sơ tán S'+fmt(i+1)+' (giả lập)</title></g>';
-    });
-    $('mapSvg').setAttribute('viewBox','0 0 820 600');
-    $('mapSvg').innerHTML = [
+    const sensorSvg=sensors.map((p,i) => '<g transform="translate('+p[0]+' '+p[1]+')"><circle r="12" fill="#fff" stroke="#111" stroke-width="2"/><circle r="4" fill="#111"/><circle r="19" fill="none" stroke="#777" stroke-dasharray="3 4"/><title>Cảm biến SYN-'+fmt(i+1)+' — dữ liệu giả lập</title></g>').join('');
+    const shelterSvg=shelters.map((p,i) => '<g transform="translate('+p[0]+' '+p[1]+')"><circle r="16" fill="#111" stroke="#fff" stroke-width="3"/><path d="M-8 0 L0 -8 8 0 V8 H-8 Z M-2 8 V3 H2 V8" fill="none" stroke="#fff" stroke-width="2"/><title>Điểm trú ẩn S'+fmt(i+1)+' — giả định</title></g>').join('');
+    const buildingSites=[[78,180],[250,230],[316,118],[512,190],[672,244],[170,494],[608,481]];
+    const buildings=buildingSites.map((p,i) => '<g><rect x="'+p[0]+'" y="'+p[1]+'" width="'+(23+i%3*8)+'" height="'+(18+i%4*7)+'" fill="#d1d1d1" stroke="#444"/><path d="M'+(p[0]+5)+' '+(p[1]+7)+' h9" stroke="#fff" stroke-width="3"/></g>').join('');
+    let tower='';
+    for(let floor=1; floor<=5; floor++){
+      const y=234-floor*21;
+      tower += '<g class="tower-floor" data-floor="'+floor+'"><rect x="440" y="'+y+'" width="56" height="19" rx="1.5" fill="'+(floor%2===0?'#575757':'#262626')+'" stroke="#fff" stroke-width="1.5"/><rect x="447" y="'+(y+5)+'" width="8" height="8" fill="#fff"/><rect x="462" y="'+(y+5)+'" width="8" height="8" fill="#fff"/><rect x="477" y="'+(y+5)+'" width="8" height="8" fill="#fff"/></g>';
+    }
+    const target=$('mapSvg');
+    target.setAttribute('viewBox','0 0 820 600');
+    target.innerHTML = [
       '<defs>',
-      '<pattern id="floodHatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="10" stroke="#777" stroke-width="3"/></pattern>',
-      '<pattern id="fineGrid" width="27" height="27" patternUnits="userSpaceOnUse"><path d="M27 0 H0 V27" fill="none" stroke="#ececec" stroke-width="1"/></pattern>',
-      '</defs><rect width="820" height="600" fill="#fbfbfb"/><rect width="820" height="600" fill="url(#fineGrid)"/>',
-      '<g class="map-roads">'+roads.join('')+'</g>',
-      '<g data-map-layer="boundaries" fill="none" stroke="#444" stroke-width="2" stroke-dasharray="9 6">',
+      '<pattern id="floodHatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9" stroke="#666" stroke-width="2.5"/></pattern>',
+      '<pattern id="fineGrid" width="27" height="27" patternUnits="userSpaceOnUse"><path d="M27 0 H0 V27" fill="none" stroke="#eaeaea" stroke-width="1"/></pattern>',
+      '</defs><rect width="820" height="600" fill="#ffffff"/>',
+      '<g class="build-wireframe" data-build-stage="1" fill="none" stroke="#777" stroke-width="1.4" stroke-dasharray="8 7">',
+      '<rect x="42" y="39" width="736" height="525"/><rect x="68" y="77" width="422" height="215"/><rect x="509" y="77" width="233" height="215"/><rect x="68" y="315" width="674" height="208"/>',
+      '<path d="M62 304 L758 304 M500 56 L500 540"/><text x="64" y="68" fill="#666" font-family="monospace" font-size="14" stroke="none">WEBGIS WIREFRAME · 820×600</text></g>',
+      '<g class="build-layer" data-build-stage="2"><rect width="820" height="600" fill="url(#fineGrid)"/>',
+      '<path d="M31 63L790 63 783 571 36 574Z" fill="none" stroke="#bbb" stroke-width="2" stroke-dasharray="3 6"/></g>',
+      '<g class="build-layer" data-map-layer="boundaries" data-build-stage="2" fill="none" stroke="#444" stroke-width="2" stroke-dasharray="9 6">',
       '<path d="M40 30L283 40 362 172 218 327 32 284Z"/><path d="M283 40L561 33 737 176 594 315 362 172Z"/><path d="M32 284L218 327 370 510 72 575Z"/><path d="M218 327L594 315 775 560 370 510Z"/></g>',
-      '<g data-map-layer="risk">',
-      '<path class="risk-zone" data-zone="north" d="M35 110 Q180 30 312 166 L360 240 170 315 50 248 Z" fill="url(#floodHatch)" opacity=".78" stroke="#777"/>',
-      '<path class="risk-zone" data-zone="center" d="M105 324 Q260 213 405 260 T707 354 L686 445 Q495 390 386 470 T155 431 Z" fill="#464646" opacity=".84" stroke="#333"/>',
-      '<path class="risk-zone" data-zone="east" d="M522 115L715 162 778 338 640 357 562 270Z" fill="url(#floodHatch)" opacity=".65" stroke="#777"/>',
-      '<path class="risk-zone" data-zone="south" d="M160 454L395 460 580 540 518 590 198 582Z" fill="#e8e8e8" stroke="#b0b0b0"/>',
-      '</g>',
-      '<g data-map-layer="river"><path d="M-40 305 C130 267 202 389 355 326 S576 245 857 367" stroke="#9c9c9c" stroke-width="34" fill="none" opacity=".85"/><path d="M-40 305 C130 267 202 389 355 326 S576 245 857 367" stroke="#ededed" stroke-width="19" fill="none"/><path d="M-40 305 C130 267 202 389 355 326 S576 245 857 367" stroke="#777" stroke-width="1" fill="none" stroke-dasharray="9 7"/></g>',
-      '<g data-map-layer="routes"><path d="M188 388L231 343 312 371 385 335 472 299 606 110" fill="none" stroke="#fff" stroke-width="12" stroke-linejoin="round"/><path d="M188 388L231 343 312 371 385 335 472 299 606 110" fill="none" stroke="#111" stroke-width="5" stroke-linejoin="round" stroke-dasharray="12 5"/><path d="M520 412L614 412 715 290" fill="none" stroke="#fff" stroke-width="12"/><path d="M520 412L614 412 715 290" fill="none" stroke="#111" stroke-width="5" stroke-dasharray="12 5"/></g>',
-      '<g data-map-layer="sensors">'+sensorSvg+'</g>',
-      '<g data-map-layer="shelters">'+shelterSvg+'</g>',
-      '<g aria-hidden="true"><text class="ward-label" x="84" y="78">KHU BẮC</text><text class="ward-label" x="591" y="79">KHU ĐÔNG</text><text class="ward-label" x="333" y="423">VEN SÔNG</text><text class="ward-label" x="244" y="556">KHU NAM</text><text x="620" y="579" font-size="13" fill="#666">0 ━━━ 1 km (sơ đồ)</text></g>'
+      '<g class="build-layer" data-map-layer="risk" data-build-stage="6">',
+      '<path class="risk-zone" data-zone="north" d="M35 110 Q180 30 312 166 L360 240 170 315 50 248 Z" fill="url(#floodHatch)" opacity=".65" stroke="#777"/>',
+      '<path class="risk-zone" data-zone="center" d="M105 324 Q260 213 405 260 T707 354 L686 445 Q495 390 386 470 T155 431 Z" fill="#464646" opacity=".78" stroke="#333"/>',
+      '<path class="risk-zone" data-zone="east" d="M522 115L715 162 778 338 640 357 562 270Z" fill="url(#floodHatch)" opacity=".58" stroke="#777"/>',
+      '<path class="risk-zone" data-zone="south" d="M160 454L395 460 580 540 518 590 198 582Z" fill="#e8e8e8" opacity=".8" stroke="#b0b0b0"/></g>',
+      '<g class="build-layer" data-build-stage="3" data-map-layer="roads">'+roads.join('')+'</g>',
+      '<g class="build-layer" data-map-layer="river" data-build-stage="3">',
+      '<path d="M-40 305 C130 267 202 389 355 326 S576 245 857 367" stroke="#8f8f8f" stroke-width="34" fill="none" opacity=".9"/>',
+      '<path d="M-40 305 C130 267 202 389 355 326 S576 245 857 367" stroke="#f0f0f0" stroke-width="19" fill="none"/>',
+      '<path d="M-40 305 C130 267 202 389 355 326 S576 245 857 367" stroke="#777" stroke-width="1.5" fill="none" stroke-dasharray="9 7"/></g>',
+      '<g class="build-layer" data-build-stage="4">'+buildings+'</g>',
+      '<g class="build-layer" data-map-layer="sensors" data-build-stage="5">'+sensorSvg+'</g>',
+      '<g class="build-layer" data-map-layer="routes" data-build-stage="7">',
+      '<path d="M188 388L231 343 312 371 385 335 472 299 606 110" fill="none" stroke="#fff" stroke-width="12" stroke-linejoin="round"/>',
+      '<path d="M188 388L231 343 312 371 385 335 472 299 606 110" fill="none" stroke="#111" stroke-width="5" stroke-linejoin="round" stroke-dasharray="12 5"/>',
+      '<path d="M520 412L614 412 715 290" fill="none" stroke="#fff" stroke-width="12"/>',
+      '<path d="M520 412L614 412 715 290" fill="none" stroke="#111" stroke-width="5" stroke-dasharray="12 5"/></g>',
+      '<g class="build-layer" data-map-layer="shelters" data-build-stage="4">'+shelterSvg+'</g>',
+      '<g class="build-layer" data-build-stage="4"><rect x="436" y="234" width="64" height="12" fill="#111"/><rect x="433" y="245" width="70" height="4" fill="#aaa"/>'+tower+'</g>',
+      '<g class="build-layer" data-build-stage="8" aria-hidden="true">',
+      '<text class="ward-label" x="84" y="78">KHU BẮC</text><text class="ward-label" x="591" y="79">KHU ĐÔNG</text><text class="ward-label" x="333" y="423">VEN SÔNG</text><text class="ward-label" x="244" y="556">KHU NAM</text>',
+      '<text x="439" y="109" fill="#111" font-size="12" font-weight="800" stroke="#fff" stroke-width="3" paint-order="stroke">TRẠM 5 TẦNG</text>',
+      '<text x="620" y="579" font-size="13" fill="#666">0 ━━━ 1 km (sơ đồ)</text></g>',
+      '<g id="constructionAgents" pointer-events="none"></g>'
     ].join('');
-    $('mapSvg').addEventListener('click',ev=>{
+    target.addEventListener('click',ev => {
       const zone=ev.target.closest('[data-zone]');
-      if(!zone)return;
+      if(!zone || getStage()<6)return;
       const z=ZONES[zone.getAttribute('data-zone')];
       $('mapDetail').textContent='▣ '+z.name+' · Nguy cơ: '+z.risk+' · Mực nước mẫu: '+z.depth+' · '+z.recommendation+' Chỉ là số liệu giả lập.';
+    });
+  }
+  function getStage() {
+    return Math.min(STAGES.length-1,Math.floor(elapsed/STAGE_MS));
+  }
+  function updateBuildLayers(stage) {
+    document.querySelectorAll('#mapSvg [data-build-stage]').forEach(el => {
+      const s=Number(el.getAttribute('data-build-stage'));
+      const show=el.classList.contains('build-wireframe') ? stage===1 : stage>=s;
+      el.classList.toggle('visible',show);
+    });
+    document.querySelectorAll('#mapSvg [data-floor]').forEach(el => {
+      const floor=Number(el.getAttribute('data-floor'));
+      el.classList.toggle('visible',stage>=4 && floor<=stage-3);
+    });
+    document.querySelectorAll('[data-chrome-stage]').forEach(el => {
+      el.classList.toggle('visible',stage>=Number(el.getAttribute('data-chrome-stage')));
+    });
+    const graph=$('graphCanvas');
+    graph.classList.toggle('graph-live',stage>=2);
+    $('wireframe').classList.toggle('hide',stage!==1);
+  }
+  function makeMapCursors() {
+    const container=$('constructionAgents');
+    const ns='http://www.w3.org/2000/svg';
+    agents.forEach((a,i) => {
+      const g=document.createElementNS(ns,'g');
+      g.setAttribute('class','construction-cursor');
+      g.setAttribute('opacity','0');
+      const pointer=document.createElementNS(ns,'path');
+      pointer.setAttribute('d','M0 0 L0 15 L4 11 L7 19 L11 17 L7 10 L15 10 Z');
+      pointer.setAttribute('fill',i%2?'#111':'#666');
+      pointer.setAttribute('stroke','#fff');pointer.setAttribute('stroke-width','1.5');
+      g.appendChild(pointer);
+      if(i%4===0){
+        const text=document.createElementNS(ns,'text');
+        text.setAttribute('x','15');text.setAttribute('y','17');
+        text.setAttribute('font-size','10');text.setAttribute('font-family','monospace');
+        text.setAttribute('fill','#111');text.setAttribute('stroke','#fff');
+        text.setAttribute('stroke-width','3');text.setAttribute('paint-order','stroke');
+        text.textContent=a.id;g.appendChild(text);
+      }
+      container.appendChild(g);
+      mapCursorNodes.push(g);
+    });
+  }
+  function updateMapCursors() {
+    const anchors=[[150,95],[260,230],[420,95],[600,135],[380,360],[465,300],[560,400],[690,505],[670,115]];
+    agents.forEach((a,i) => {
+      const g=mapCursorNodes[i];
+      if(!g)return;
+      const status=agentStatus(a);
+      if(status!=='running' || getStage()===0){g.setAttribute('opacity','0');return;}
+      const stage=getStage();
+      const anchor=anchors[Math.max(0,Math.min(8,stage))];
+      const t=elapsed/1000;
+      const angle=t*(0.4+(i%9)*.09)+i*2.399963;
+      const radius=25+(i*13)%165;
+      const cx=anchor[0]+Math.cos(angle)*radius+(a.group%3-1)*38;
+      const cy=anchor[1]+Math.sin(angle*.8)*radius*.7+(a.group%3-1)*31;
+      const x=Math.min(794,Math.max(20,cx));
+      const y=Math.min(570,Math.max(18,cy));
+      g.setAttribute('transform','translate('+x.toFixed(1)+' '+y.toFixed(1)+') scale(.9)');
+      g.setAttribute('opacity','0.72');
     });
   }
   function updateMapLayers() {
@@ -232,15 +327,20 @@
     if(!force && tick===lastRender)return;
     lastRender=tick;
     const p=Math.min(1,elapsed/DURATION);
-    const stage=Math.min(STAGES.length-1,Math.floor(p*STAGES.length));
-    const count=p>=1?TOTAL_LAYERS:Math.floor(TOTAL_LAYERS*(1-Math.pow(1-p,1.15)));
+    const stage=getStage();
+    if(stage!==lastStage){
+      lastStage=stage;
+      $('mapDetail').textContent=STAGE_DETAILS[stage]+' · Dữ liệu tổng hợp, chỉ dùng minh họa.';
+    }
+    updateBuildLayers(stage);
+    const buildP=Math.max(0,(elapsed-STAGE_MS)/(DURATION-STAGE_MS));
+    const count=p>=1?TOTAL_LAYERS:Math.floor(TOTAL_LAYERS*(1-Math.pow(1-buildP,1.15)));
     $('layerCount').textContent=count.toLocaleString('en-US');
     $('progressFill').style.width=(count/TOTAL_LAYERS*100).toFixed(2)+'%';
     $('elapsed').textContent='T+'+fmt(Math.floor(elapsed/60000))+':'+fmt(Math.floor(elapsed/1000)%60);
     $('graphState').textContent=STAGES[stage].toUpperCase();
     $('taskState').textContent=p>=1?'COMPLETE':'RUNNING';
     $('mapStatus').textContent=p>=1?'RENDERED':STAGES[stage].toUpperCase();
-    $('wireframe').classList.toggle('hide',elapsed>2100);
     groupNodes.forEach((g,i)=>g.classList.toggle('active',GROUPS[i].phase===stage && p<1));
     document.querySelectorAll('.flow-line').forEach((line,i)=>line.classList.toggle('active',p<1 && GROUPS[CONNECTIONS[i][0]].phase<=stage));
     let active=0,done=0;
@@ -267,7 +367,7 @@
     $('latencyMetric').textContent='TIME: '+(elapsed/1000).toFixed(1)+'s · SPEED '+speed+'×';
     $('playBtn').textContent=paused?'▶ Tiếp tục':'❚❚ Tạm dừng';
     $('playBtn').disabled=p>=1;
-    $('geoAlert').style.opacity=p<.25?'.6':'1';
+    $('timelineScrub').value=String(Math.round(elapsed));
     document.querySelectorAll('.timeline-step').forEach((el,i)=>{
       el.classList.toggle('active',i===stage&&p<1);
       el.classList.toggle('done',i<stage||p>=1);
@@ -277,7 +377,7 @@
       const ix=Math.max(0,stage-k);
       entries.push('<div>['+fmt(Math.floor(elapsed/60000))+':'+fmt(Math.floor(elapsed/1000)%60)+'] '+escapeHTML(LOGS[ix])+'</div>');
     }
-    if(p>=1)entries[0]='<div>[00:32] Đã kết thúc 58 luồng tác tử giả lập; 1847 UI ops.</div>';
+    if(p>=1)entries[0]='<div>[00:36] Hoàn thiện WebGIS sau 58 luồng tác tử giả lập · 1847 UI ops.</div>';
     $('logFeed').innerHTML=entries.join('');
     if(selectedId){
       const a=agents.find(x=>x.id===selectedId);
@@ -289,16 +389,16 @@
     const dt=Math.min(now-lastFrame,100);lastFrame=now;
     if(!paused && elapsed<DURATION)elapsed=Math.min(DURATION,elapsed+dt*speed);
     render();
-    if(!paused) updateCursors();
+    if(!paused){updateCursors();updateMapCursors();}
     requestAnimationFrame(frame);
   }
   function replay(){
-    elapsed=0;lastFrame=0;lastRender=-1;paused=false;selectedId=null;
-    $('mapDetail').textContent='Đang dựng wireframe và phân bổ công việc cho 58 Agent. Dữ liệu hoàn toàn giả lập.';
+    elapsed=0;lastFrame=0;lastRender=-1;lastStage=-1;paused=false;selectedId=null;
+    $('mapDetail').textContent='GIAI ĐOẠN 00 — Canvas trắng hoàn toàn. Chưa có dữ liệu hoặc công trình.';
     agentNodes.forEach(n=>n.classList.remove('selected'));
     document.querySelectorAll('.agent-row').forEach(n=>n.classList.remove('selected'));
     $('inspector').innerHTML='<strong>AGENT INSPECTOR</strong><div>Nhấn vào A01–A58 để xem trạng thái.</div>';
-    render(true);
+    render(true);updateCursors();updateMapCursors();
   }
   function exportLog(){
     const payload={
@@ -319,10 +419,18 @@
   }
   function init(){
     makeAgents();buildSideList();buildGraph();svgMap();updateMapLayers();
-    $('timeline').innerHTML=STAGES.map(s=>'<div class="timeline-step">'+s+'</div>').join('');
-    makeCursors();drawConnections();
+    $('timeline').innerHTML=STAGES.map((stage,i)=>'<button type="button" class="timeline-step" data-stage="'+i+'" title="Tua đến giai đoạn '+i+': '+escapeHTML(STAGE_DETAILS[i])+'">'+stage+'</button>').join('');
+    makeCursors();makeMapCursors();drawConnections();
+    $('timeline').querySelectorAll('[data-stage]').forEach(btn=>btn.addEventListener('click',()=>{
+      elapsed=Number(btn.dataset.stage)*STAGE_MS;
+      paused=true;lastStage=-1;render(true);updateMapCursors();updateCursors();
+    }));
+    $('timelineScrub').addEventListener('input',event=>{
+      elapsed=Math.max(0,Math.min(DURATION,Number(event.target.value)||0));
+      paused=true;lastStage=-1;render(true);updateMapCursors();updateCursors();
+    });
     document.querySelectorAll('input[data-layer]').forEach(el=>el.addEventListener('change',updateMapLayers));
-    $('playBtn').addEventListener('click',()=>{if(elapsed>=DURATION)return;paused=!paused;render(true);});
+    $('playBtn').addEventListener('click',()=>{if(elapsed>=DURATION)return;paused=!paused;lastFrame=0;render(true);});
     $('replayBtn').addEventListener('click',replay);
     $('speedBtn').addEventListener('click',()=>{speed=speed===1?2:speed===2?4:1;$('speedBtn').textContent=speed+'×';render(true);});
     $('exportBtn').addEventListener('click',exportLog);
@@ -338,7 +446,7 @@
       paused=true;
       $('sideTip').textContent+=' Đã tạm dừng theo cài đặt giảm chuyển động của hệ thống.';
     }
-    render(true);
+    render(true);updateMapCursors();
     requestAnimationFrame(frame);
   }
   init();
