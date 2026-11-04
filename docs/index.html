@@ -49,16 +49,16 @@
         <div class="head-metrics"><span class="metric-chip">06 GIS DATA TYPES</span><span id="mapStatus" class="metric-chip">AWAITING AGENTS</span></div>
       </div>
       <div class="map-viewport" id="mapViewport">
-        <div class="map-search">⌕&nbsp; Khám phá nguy cơ ngập · tuyến sơ tán</div>
-        <div class="zoom-control"><button id="zoomIn" type="button" aria-label="Phóng to bản đồ">+</button><button id="zoomOut" type="button" aria-label="Thu nhỏ bản đồ">−</button><button id="zoomReset" type="button" aria-label="Đặt lại bản đồ">⌂</button></div>
-        <div class="north">N</div>
+        <div class="map-search build-chrome" data-chrome-stage="8">⌕&nbsp; Khám phá nguy cơ ngập · tuyến sơ tán</div>
+        <div class="zoom-control build-chrome" data-chrome-stage="8"><button id="zoomIn" type="button" aria-label="Phóng to bản đồ">+</button><button id="zoomOut" type="button" aria-label="Thu nhỏ bản đồ">−</button><button id="zoomReset" type="button" aria-label="Đặt lại bản đồ">⌂</button></div>
+        <div class="north build-chrome" data-chrome-stage="8">N</div>
         <svg id="mapSvg" role="img" aria-label="Bản đồ sơ đồ các vùng ngập, sông, cảm biến, nơi trú ẩn và đường sơ tán được sinh giả lập"></svg>
-        <div class="geo-alert" id="geoAlert"><strong>⚠ FLOOD RISK · DEMO</strong><p>Nhóm tác tử thủy văn đang phân tích dữ liệu tổng hợp. Không dùng để quyết định sơ tán thực tế.</p></div>
-        <div class="legend"><strong>CHÚ GIẢI</strong><div class="legend-row"><span class="legend-swatch high"></span> Nguy cơ cao</div><div class="legend-row"><span class="legend-swatch mid"></span> Nguy cơ vừa</div><div class="legend-row"><span class="legend-swatch safe"></span> Nguy cơ thấp</div><div class="legend-row"><span class="legend-swatch road"></span> Tuyến đề xuất</div></div>
-        <div class="simulation-stamp">SYNTHETIC DATA • NOT FOR EMERGENCY USE</div>
-        <div class="map-coord">10.25°N · 105.97°E · illustrative</div>
+        <div class="geo-alert build-chrome" data-chrome-stage="6" id="geoAlert"><strong>⚠ FLOOD RISK · DEMO</strong><p>Nhóm tác tử thủy văn đang phân tích dữ liệu tổng hợp. Không dùng để quyết định sơ tán thực tế.</p></div>
+        <div class="legend build-chrome" data-chrome-stage="8"><strong>CHÚ GIẢI</strong><div class="legend-row"><span class="legend-swatch high"></span> Nguy cơ cao</div><div class="legend-row"><span class="legend-swatch mid"></span> Nguy cơ vừa</div><div class="legend-row"><span class="legend-swatch safe"></span> Nguy cơ thấp</div><div class="legend-row"><span class="legend-swatch road"></span> Tuyến đề xuất</div></div>
+        <div class="simulation-stamp build-chrome" data-chrome-stage="8">SYNTHETIC DATA • NOT FOR EMERGENCY USE</div>
+        <div class="map-coord build-chrome" data-chrome-stage="8">10.25°N · 105.97°E · illustrative</div>
       </div>
-      <div class="map-detail" id="mapDetail" aria-live="polite">Chọn một vùng nguy cơ trên bản đồ hoặc một Agent trong đồ thị để xem công việc và kết quả minh họa.</div>
+      <div class="map-detail" id="mapDetail" aria-live="polite">GIAI ĐOẠN 00 — Canvas trắng hoàn toàn. Hệ thống chưa dựng lớp không gian nào.</div>
     </section>
     <section class="panel graph-panel" aria-label="Đồ thị phối hợp tác tử">
       <div class="panel-head">
@@ -81,7 +81,8 @@
       </div>
       <div class="graph-bottom">
         <div class="panel-head" style="padding:0;border:0"><h2>▶ Execution Flow</h2><span id="elapsed" class="metric-chip">T+00:00</span></div>
-        <div class="timeline" id="timeline" aria-label="Tiến trình xử lý"></div>
+        <div class="timeline" id="timeline" aria-label="Tiến trình xây dựng WebGIS"></div>
+        <div class="scrub-row"><span>00:00 · BLANK CANVAS</span><input id="timelineScrub" type="range" min="0" max="36000" value="0" step="100" aria-label="Tua tiến trình mô phỏng WebGIS"><span>00:36 · COMPLETE</span></div>
         <div class="bottom-meta">
           <div class="log-feed" id="logFeed" role="log" aria-live="off"></div>
           <div class="agent-inspector" id="inspector"><strong>AGENT INSPECTOR</strong><div>Nhấn vào A01–A58 để xem trạng thái.</div></div>
