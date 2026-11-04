@@ -32,6 +32,26 @@ Các thư viện React Flow và Svelte Flow gốc trong thư mục packages đư
 
 Chỉ số **58 agents | 1847 layers** dùng trong trình diễn. 1847 layers là **1.847 thao tác/lớp UI tổng hợp**, **không phải 1.847 lớp dữ liệu GIS**. Các polygon, tọa độ, trạm và tuyến trong bản đồ đều là dữ liệu mô phỏng, không được kiểm chứng.
 
+## Timeline xây dựng từ canvas trắng đến WebGIS hoàn chỉnh
+
+Ứng dụng chạy mặc định trong **36 giây mô phỏng**, chia 9 giai đoạn, mỗi giai đoạn khoảng 4 giây:
+
+| Giây | Stage | Lớp được xây |
+| --- | --- | --- |
+| 00–04 | Blank | Bản đồ trắng, không có lớp GIS |
+| 04–08 | Wireframe | Các Agent dựng khung nét đứt |
+| 08–12 | Basemap | Lưới nền, ranh giới |
+| 12–16 | Hydro | Sông/kênh và đường giao thông |
+| 16–20 | Buildings | Nhà mẫu, nơi trú ẩn, tầng 1 của trạm |
+| 20–24 | Sensors | Các trạm cảm biến, tầng 2 |
+| 24–28 | Flood | Vùng nguy cơ ngập, tầng 3 |
+| 28–32 | Routes | Tuyến sơ tán, tầng 4 |
+| 32–36 | Complete | Tầng 5 và các nhãn/chú giải |
+
+58 con trỏ Agent hoạt động ở trên bản đồ mô phỏng và trên đồ thị. Có thể nhấn **Chạy lại** để bắt đầu từ trang trắng, nhấn tên từng giai đoạn để tua, hoặc kéo **thanh timeline** tới bất kỳ thời điểm nào. Thao tác tua tự động tạm dừng; nhấn **Tiếp tục** để chạy từ thời điểm được chọn. Các ô chọn lớp GIS vẫn có tác dụng sau khi lớp tương ứng được dựng.
+
+Tòa nhà 5 tầng chỉ là **biểu tượng mô phỏng quy trình xây dựng từng thành phần**, không phải một tòa nhà hay điểm sơ tán được xác minh tại Vĩnh Long. Không dùng bản đồ, vùng ngập và tuyến sơ tán minh họa cho tình huống khẩn cấp thực tế.
+
 ## Điều khiển
 
 - **Tạm dừng / Tiếp tục, Chạy lại, 1× / 2× / 4×**.
