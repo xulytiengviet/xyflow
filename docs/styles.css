@@ -97,3 +97,27 @@ button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus
 
 /* Ensure search results obey the native hidden attribute even on flex rows. */
 [hidden]{display:none!important}
+
+/* Staged WebGIS construction: blank canvas -> wireframe -> final GIS. */
+.map-viewport{background:#fff}
+#mapSvg{background:#fff;transform-origin:50% 50%;transition:transform .22s ease}
+#mapSvg .build-layer{opacity:0;visibility:hidden;transform:translateY(10px);transform-origin:center;transition:opacity .5s ease,transform .5s ease,visibility .5s;pointer-events:none}
+#mapSvg .build-layer.visible{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
+#mapSvg .build-wireframe{opacity:0;visibility:hidden;transition:opacity .3s}
+#mapSvg .build-wireframe.visible{opacity:1;visibility:visible}
+#mapSvg .tower-floor{opacity:0;transform:translateY(14px) scaleY(.65);transform-box:fill-box;transform-origin:center bottom;transition:opacity .46s ease,transform .65s cubic-bezier(.16,.8,.26,1);pointer-events:none}
+#mapSvg .tower-floor.visible{opacity:1;transform:translateY(0) scaleY(1)}
+.build-chrome{opacity:0!important;visibility:hidden!important;transition:opacity .4s ease,visibility .4s;pointer-events:none!important}
+.build-chrome.visible{opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+#mapSvg .construction-cursor{pointer-events:none}
+.graph-canvas:not(.graph-live) .group-grid,.graph-canvas:not(.graph-live) #edgeSvg,.graph-canvas:not(.graph-live) #agentCursors{opacity:0}
+.graph-canvas .group-grid,.graph-canvas #edgeSvg,.graph-canvas #agentCursors{transition:opacity .35s}
+.graph-canvas .wireframe.hide{opacity:0;visibility:hidden}
+.timeline-step{background:transparent;border:0;cursor:pointer;padding-left:0;padding-right:0}
+.timeline-step:hover{color:#000}
+.timeline-step:focus-visible{outline:2px solid #111;outline-offset:3px;border-radius:4px}
+.scrub-row{display:flex;gap:8px;align-items:center;margin-top:12px;font:650 9px ui-monospace,monospace;color:#555}
+.scrub-row span{white-space:nowrap}
+.scrub-row input{min-width:0;flex:1;accent-color:#111;height:14px;cursor:pointer}
+.map-detail{font-weight:600}
+@media(max-width:690px){.scrub-row span{font-size:8px}.timeline-step{font-size:8px}}
